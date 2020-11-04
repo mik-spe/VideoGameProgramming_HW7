@@ -23,16 +23,19 @@ abstract class CameraEffect
 {
     protected OrthographicCamera cam;
     protected int duration, progress;
+    protected float imgX, imgY;
     protected ShapeRenderer renderer;
     protected SpriteBatch batch;
 
     // Constructor
-    public CameraEffect(OrthographicCamera cam, int duration, SpriteBatch batch, ShapeRenderer renderer)
+    public CameraEffect(OrthographicCamera cam, int duration, SpriteBatch batch, ShapeRenderer renderer, float imgX, float imgY)
     {
         this.cam = cam;
         this.duration = duration;
         this.batch = batch;
         this.renderer = renderer;
+        this.imgX = imgX;
+        this.imgY = imgY;
         progress = duration;
     }
 
@@ -65,9 +68,119 @@ abstract class CameraEffect
         // How a CameraEffect starts
         progress = 0;
     }
+}
 
-    
+// Camera Effect of moving the camera
+class CameraMove extends CameraEffect
+{
+    private int intensity;
+    private int speed;
+    private float imgX;
+    private float imgY;
 
+    public CameraMove(OrthographicCamera cam, int duration, SpriteBatch batch, ShapeRenderer renderer, float imgX, float imgY) 
+    {
+        super(cam, duration, batch, renderer, imgX, imgY);
+    }
+
+    public float getImgX()
+    {
+        return imgX;
+    }
+    public void setImgX(float imgX)
+    {
+        this.imgX = imgX;
+    }
+
+    public float getImgY()
+    {
+        return imgY;
+    }
+    public void setImgY(float imgY)
+    {
+        this.imgY = imgY;
+    }
+
+    public int getIntensity()
+    {
+        return intensity;
+    }
+    public void setIntensity(int intensity)
+    {
+        if (intensity < 0)
+        {
+            this.intensity = 0;
+        }
+        else
+        {
+            this.intensity = intensity;
+        }
+    }
+
+    public int getSpeed()
+    {
+        return speed;
+    }
+    public void setSpeed(int speed)
+    {
+        if (speed < 0)
+        {
+            speed = 0;
+        }
+        else
+        {
+            if (speed > duration)
+            {
+                speed = duration / 2;
+            }
+            else
+            {
+                this.speed = speed;
+            }
+        }
+    }
+
+    @Override
+    public boolean isActive()
+    {
+        return super.isActive() && speed > 0;
+    }
+
+    public CameraMove(OrthographicCamera cam, int duration, SpriteBatch batch, ShapeRenderer renderer, int intensity, int speed, float imgX, float imgY) 
+	{
+        super(cam,duration,batch,renderer, imgX, imgY);
+        setIntensity(intensity);
+        setSpeed(speed);
+        setImgX(imgX);
+        setImgY(imgY);
+	}
+
+    public void play()
+    {
+        if (isActive())
+        {
+            if (progress % speed == 0)
+            {
+                cam.translate(imgX,imgY);
+            }
+
+            progress++;
+            
+            if (!isActive())
+            {
+                cam.translate(-imgX,-imgY);
+            }
+
+            updateCamera();
+        }
+    }
+
+    public void start()
+    {
+        super.start();
+        cam.translate(imgX,imgY);
+        updateCamera();
+    }
 }
 
 public class MoreCameraEffectsEdges extends ApplicationAdapter {
@@ -81,6 +194,7 @@ public class MoreCameraEffectsEdges extends ApplicationAdapter {
     float WORLDWIDTH, WORLDHEIGHT;
     LabelStyle labelStyle;
     Label label;
+    CameraMove mover;
 
     public void setupLabelStyle() 
     {
@@ -93,7 +207,7 @@ public class MoreCameraEffectsEdges extends ApplicationAdapter {
     {
         batch = new SpriteBatch();
         img = new Texture("mikan.png");
-        background = new Texture("map.jpg");
+        background = new Texture("mapIsland.jpg");
 
         // Viewport or screen
         WIDTH = Gdx.graphics.getWidth();
@@ -121,6 +235,9 @@ public class MoreCameraEffectsEdges extends ApplicationAdapter {
         label = new Label("Welcome!", labelStyle);
         // World coordinates == Screen coordinates at the beginning
         label.setPosition(20,400); 
+
+        // Camera Effect
+        mover = new CameraMove(cam, 100, batch, null, 10, 2, 10, 10);
     }
 
     public void handleInput() 
@@ -154,8 +271,10 @@ public class MoreCameraEffectsEdges extends ApplicationAdapter {
         }
         if (Gdx.input.isKeyJustPressed(Keys.SPACE))
         {
-            // Camera Effect
+            // Moves camera to upper right diagonally
+            mover.start();
         }
+        mover.play();
     }
     
     public Vector2 getViewPortOrigin() 
@@ -182,9 +301,8 @@ public class MoreCameraEffectsEdges extends ApplicationAdapter {
             } 
             else 
             {   
-                // Just pan the camera because I have more world to explore
+                // Pan the camera
                 cam.position.x = cam.position.x + screenPos.x - WIDTH + imgWidth + border;
-                System.out.println(cam.position.x);
                 cam.update();
                 batch.setProjectionMatrix(cam.combined);
             }
@@ -199,9 +317,8 @@ public class MoreCameraEffectsEdges extends ApplicationAdapter {
             } 
             else 
             {   
-                // Just pan the camera because I have more world to explore
+                // Pan the camera
                 cam.position.x = cam.position.x - (border - screenPos.x);
-                System.out.println(cam.position.x);
                 cam.update();
                 batch.setProjectionMatrix(cam.combined);
             }
@@ -216,9 +333,8 @@ public class MoreCameraEffectsEdges extends ApplicationAdapter {
             }
             else 
             {   
-                // Keep panning we have more room
+                // Keep panning
                 cam.position.y = cam.position.y + screenPos.y - HEIGHT + imgHeight + border;
-                System.out.println(cam.position.y);
                 cam.update();
                 batch.setProjectionMatrix(cam.combined);
             }
@@ -233,9 +349,8 @@ public class MoreCameraEffectsEdges extends ApplicationAdapter {
             }
             else 
             {  
-                // Keep panning we have more room
+                // Keep panning
                 cam.position.y = cam.position.y - (border - screenPos.y);
-                System.out.println(cam.position.y);
                 cam.update();
                 batch.setProjectionMatrix(cam.combined);
             }
@@ -269,7 +384,7 @@ public class MoreCameraEffectsEdges extends ApplicationAdapter {
 
     public void lockCoordinatesJail(float targetWidth, float targetHeight)
     {
-        // When pressed J
+        // When pressed J, lock the character in center of screen
         WIDTH = imgWidth * 1.5f;
         HEIGHT = imgHeight * 1.5f;
     }
@@ -319,6 +434,8 @@ public class MoreCameraEffectsEdges extends ApplicationAdapter {
         * The screen as the camera moves.
         */
         label.setPosition(20+(cam.position.x-WIDTH/2),400+cam.position.y-HEIGHT/2);
+
+        mover.play();
 
         batch.begin();
         batch.draw(background,-1024,-768);
