@@ -9,6 +9,8 @@ package edu.lewisu.cs.mikalaspencer;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Keys;
+import com.badlogic.gdx.audio.Music;
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
@@ -195,6 +197,8 @@ public class MoreCameraEffectsEdges extends ApplicationAdapter {
     LabelStyle labelStyle;
     Label label;
     CameraMove mover;
+    Music sdr2;
+    Sound mikan;
 
     public void setupLabelStyle() 
     {
@@ -238,6 +242,14 @@ public class MoreCameraEffectsEdges extends ApplicationAdapter {
 
         // Camera Effect
         mover = new CameraMove(cam, 100, batch, null, 10, 2, 10, 10);
+
+        // Audio
+        sdr2 = Gdx.audio.newMusic(Gdx.files.internal("audio/SDR2.mp3"));
+        mikan = Gdx.audio.newSound(Gdx.files.internal("audio/mikanName.mp3"));
+
+        sdr2.setLooping(true);
+        sdr2.setVolume(0.8f);
+        sdr2.play();
     }
 
     public void handleInput() 
@@ -257,6 +269,11 @@ public class MoreCameraEffectsEdges extends ApplicationAdapter {
         if (Gdx.input.isKeyPressed(Keys.S)) 
         {
             imgY-=10; 
+        }
+        if (Gdx.input.isKeyJustPressed(Keys.SHIFT_LEFT))
+        {
+            // Play sound
+            mikan.play();
         }
         if (Gdx.input.isKeyJustPressed(Keys.J))
         {
@@ -449,5 +466,9 @@ public class MoreCameraEffectsEdges extends ApplicationAdapter {
     {
         batch.dispose();
         img.dispose();
+
+        // Stop audio
+        sdr2.dispose();
+        mikan.dispose();
     }
 }
